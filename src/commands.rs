@@ -92,7 +92,7 @@ pub async fn add(
         }
     };
 
-    let am = db::entity::macro_db::ActiveModel {
+    let am = db::entity::macro_model::ActiveModel {
         owner: Set(owner_id as i64),
         name: Set(name),
         contents: Set(contents),
