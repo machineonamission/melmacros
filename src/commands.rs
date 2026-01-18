@@ -52,7 +52,7 @@ enum ContextType {
 
 
 #[poise::command(slash_command, subcommands("add", "delete", "edit"))]
-pub async fn managemacros(ctx: Context<'_>) -> Result<()> {
+pub async fn macros(ctx: Context<'_>) -> Result<()> {
     bail!("Dummy parent command shouldn't ever be called directly.")
 }
 

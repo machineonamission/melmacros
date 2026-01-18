@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
     // FrameworkOptions contains all of poise's configuration option in one struct
     // Every option can be omitted to use its default value
     let options = poise::FrameworkOptions {
-        commands: vec![commands::help(), commands::register(), commands::r#macro(), commands::managemacros()],
+        commands: vec![commands::help(), commands::register(), commands::r#macro(), commands::macros()],
         // prefix_options: poise::PrefixFrameworkOptions {
         //     prefix: None,
         //     mention_as_prefix: true,
