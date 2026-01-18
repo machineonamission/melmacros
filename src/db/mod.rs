@@ -1,6 +1,6 @@
-mod entity;
-use tokio::sync::OnceCell;
+pub mod entity;
 use anyhow::Result;
+
 
 // static DATABASE: OnceCell<DatabaseConnection> = OnceCell::const_new();
 

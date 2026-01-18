@@ -2,59 +2,31 @@ mod db;
 
 mod commands;
 mod config;
+mod common;
 
 use anyhow::{Error, Result};
 
 use poise::serenity_prelude as serenity;
-use sea_orm::DatabaseConnection;
-use std::{
-    collections::HashMap,
-    env::var,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
-
-// Types used by all command functions
-type Context<'a> = poise::Context<'a, Data, Error>;
-
-// Custom user data passed to all command functions
-pub struct Data {
-    db: DatabaseConnection,
-}
+use common::Data;
 
 async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
     // This is our custom error handler
     // They are many errors that can occur, so we only handle the ones we want to customize
     // and forward the rest to the default handler
-    match error {
-        poise::FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
-        poise::FrameworkError::Command { error, ctx, .. } => {
-            println!("Error in command `{}`: {:?}", ctx.command().name, error,);
-        }
-        error => {
-            if let Err(e) = poise::builtins::on_error(error).await {
-                println!("Error while handling error: {}", e)
-            }
-        }
+    if let Err(e) = poise::builtins::on_error(error).await {
+        println!("Error while handling error: {}", e)
     }
-}
-
-pub async fn sync_commands(
-    ctx: &serenity::Context,
-    cmd_list: &[poise::Command<Data, Error>],
-    force: bool,
-) -> Result<Vec<serenity::Command>> {
-    let create_commands = poise::builtins::create_application_commands(cmd_list);
-
-    let existing_commands = serenity::Command::get_global_commands(ctx).await?;
-
-    if existing_commands.len() != create_commands.len() || force {
-        println!("Syncing {} commands...", create_commands.len());
-        Ok(serenity::Command::set_global_commands(ctx, create_commands).await?)
-    } else {
-        println!("Not syncing commands. run /sync to force.");
-        Ok(existing_commands)
-    }
+    // match error {
+    //     poise::FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
+    //     poise::FrameworkError::Command { error, ctx, .. } => {
+    //         println!("Error in command `{}`: {:?}", ctx.command().name, error,);
+    //     }
+    //     error => {
+    //         if let Err(e) = poise::builtins::on_error(error).await {
+    //             println!("Error while handling error: {}", e)
+    //         }
+    //     }
+    // }
 }
 
 #[tokio::main]
@@ -64,12 +36,12 @@ async fn main() -> Result<()> {
     // FrameworkOptions contains all of poise's configuration option in one struct
     // Every option can be omitted to use its default value
     let options = poise::FrameworkOptions {
-        commands: vec![commands::help(), commands::register()],
-        prefix_options: poise::PrefixFrameworkOptions {
-            prefix: None,
-            mention_as_prefix: true,
-            ..Default::default()
-        },
+        commands: vec![commands::help(), commands::register(), commands::r#macro(), commands::managemacros()],
+        // prefix_options: poise::PrefixFrameworkOptions {
+        //     prefix: None,
+        //     mention_as_prefix: true,
+        //     ..Default::default()
+        // },
         // The global error handler for all error cases that may occur
         on_error: |error| Box::pin(on_error(error)),
         // This code is run before every command
@@ -115,7 +87,7 @@ async fn main() -> Result<()> {
             Box::pin(async move {
                 println!("Logged in as {}", _ready.user.name);
 
-                sync_commands(ctx, framework.options().commands.as_slice(), false).await?;
+                common::sync_commands(ctx, framework.options().commands.as_slice(), false).await?;
                 Ok(Data {
                     db: db::init_db().await?,
                 })
