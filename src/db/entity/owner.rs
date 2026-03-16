@@ -2,19 +2,15 @@ use sea_orm::entity::prelude::*;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "macro")]
+#[sea_orm(table_name = "owner")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i64,
-
     // server or user id
-    #[sea_orm(unique_key="name")]
-    pub owner: i64,
+    #[sea_orm(primary_key)]
+    pub discord_id: i64,
 
-    #[sea_orm(unique_key="name")]
+    pub is_user: bool,  // false means is server
+
     pub name: String,
-
-    pub contents: String,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
