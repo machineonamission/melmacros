@@ -1,10 +1,10 @@
+use crate::common::Context;
+// use crate::db::entity::macro_model;
 use anyhow::{anyhow, bail, Result};
-use sea_orm::{ActiveModelTrait, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serenity::all::{
     AuthorizingIntegrationOwner, InteractionContext,
 };
-use crate::common::Context;
-use crate::db;
 
 /// Show this help menu
 #[poise::command(slash_command)]
@@ -40,6 +40,19 @@ pub async fn r#macro(
     // #[autocomplete = "poise::builtins::autocomplete_command"]
     name: String,
 ) -> Result<()> {
+    // let m = macro_model::Entity::find()
+    //     .filter(macro_model::Column::Name.eq(name))
+    //     .filter(macro_model::Column::Owner.eq(ctx.author().id.get() as i64))
+    //     .one(&ctx.data().db)
+    //     .await?;
+    // if let Some(m) = m {
+    //     ctx.send(poise::CreateReply::default()
+    //         .content(m.contents)
+    //         .ephemeral(false)
+    //     ).await?;
+    // } else {
+    //     bail!("Macro not found.");
+    // }
     Ok(())
 }
 
@@ -65,7 +78,6 @@ pub async fn add(
 ) -> Result<()> {
     let owner_id = match context_type {
         ContextType::User => ctx.author().id.get(),
-        // need to map there because guildref doesnt implement send so async shits itself
         ContextType::Guild => {
             // check if in guild
             if !matches!(
@@ -84,6 +96,7 @@ pub async fn add(
                 bail!("The bot is not installed in this guild.");
             }
 
+            // check that the user has manage guild permissions
             if !ctx.interaction.member.clone().ok_or(anyhow!("missing member"))?.permissions.ok_or(anyhow!("missing permissions"))?.manage_guild() {
                 bail!("You need the Manage Server permission to create guild macros.");
             }
