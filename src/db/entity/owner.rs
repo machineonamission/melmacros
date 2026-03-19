@@ -4,7 +4,7 @@ use sea_orm::entity::prelude::*;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "owners")]
+#[sea_orm(table_name = "owner")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
@@ -15,10 +15,10 @@ pub struct Model {
     pub is_server: bool,
 
     #[sea_orm(has_many)]
-    pub created_macros: HasMany<super::macros::Entity>,
+    pub created_macros: HasMany<super::melmacro::Entity>,
 
-    #[sea_orm(has_many, via = "subscriptions")]
-    pub subscriptions: HasMany<super::macro_groups::Entity>,
+    #[sea_orm(has_many, via = "subscription")]
+    pub subscriptions: HasMany<super::macro_group::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

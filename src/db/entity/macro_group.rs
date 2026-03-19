@@ -4,7 +4,7 @@ use sea_orm::entity::prelude::*;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "macro_groups")]
+#[sea_orm(table_name = "macro_group")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
@@ -18,7 +18,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    pub owner: HasOne<super::owners::Entity>,
+    pub owner: HasOne<super::owner::Entity>,
 
     #[sea_orm(column_type = "Text")]
     pub name: String,
@@ -26,10 +26,10 @@ pub struct Model {
     pub is_subscribable: bool,
 
     #[sea_orm(has_many)]
-    pub macros: HasMany<super::macros::Entity>,
+    pub macros: HasMany<super::melmacro::Entity>,
 
-    #[sea_orm(has_many, via = "subscriptions", relation_enum = "Subscriber")]
-    pub subscribers: HasMany<super::owners::Entity>,
+    #[sea_orm(has_many, via = "subscription", relation_enum = "Subscriber")]
+    pub subscribers: HasMany<super::owner::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

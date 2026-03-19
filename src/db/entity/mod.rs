@@ -2,7 +2,7 @@
 
 pub mod prelude;
 
-pub mod macro_groups;
-pub mod macros;
-pub mod owners;
-pub mod subscriptions;
+pub mod macro_group;
+pub mod melmacro;
+pub mod owner;
+pub mod subscription;

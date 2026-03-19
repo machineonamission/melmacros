@@ -25,13 +25,6 @@ pub async fn help(
     .await?;
     Ok(())
 }
-#[poise::command(slash_command)]
-pub async fn vote(
-    ctx: Context<'_>,
-    #[description = "What to vote for"] choice: String,
-) -> Result<()> {
-    Ok(())
-}
 
 #[poise::command(slash_command)]
 pub async fn r#macro(

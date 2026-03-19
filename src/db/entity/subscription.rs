@@ -4,21 +4,14 @@ use sea_orm::entity::prelude::*;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "macros")]
+#[sea_orm(table_name = "subscription")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i64,
-
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub subscriber_id: i64,
+    
+    #[sea_orm(primary_key, auto_increment = false)]
     pub group_id: i64,
-
-    pub creator_id: i64,
-
-    #[sea_orm(column_type = "Text")]
-    pub name: String,
-
-    #[sea_orm(column_type = "Text")]
-    pub contents: String,
-
+    
     #[sea_orm(
         belongs_to,
         from = "group_id",
@@ -26,16 +19,17 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    pub group: HasOne<super::macro_groups::Entity>,
-
+    pub macro_groups: HasOne<super::macro_group::Entity>,
+    
     #[sea_orm(
         belongs_to,
-        from = "creator_id",
+        from = "subscriber_id",
         to = "id",
         on_update = "NoAction",
-        on_delete = "SetNull"
+        on_delete = "Cascade"
     )]
-    pub owner: HasOne<super::owners::Entity>,
+    pub owners: HasOne<super::owner::Entity>,
+    
 }
 
 impl ActiveModelBehavior for ActiveModel {}
