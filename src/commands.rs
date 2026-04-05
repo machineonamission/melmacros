@@ -1,7 +1,7 @@
 use crate::common::Context;
 // use crate::db::entity::macro_model;
 use anyhow::{anyhow, bail, Result};
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::ActiveModelTrait;
 use serenity::all::{
     AuthorizingIntegrationOwner, InteractionContext,
 };

@@ -6,3 +6,4 @@ pub mod macro_group;
 pub mod melmacro;
 pub mod owner;
 pub mod subscription;
+pub mod alias;

@@ -23,7 +23,7 @@ pub struct Model {
         belongs_to,
         from = "group_id",
         to = "id",
-        on_update = "NoAction",
+        on_update = "Cascade",
         on_delete = "Cascade"
     )]
     pub group: HasOne<super::macro_group::Entity>,
@@ -32,10 +32,13 @@ pub struct Model {
         belongs_to,
         from = "creator_id",
         to = "id",
-        on_update = "NoAction",
-        on_delete = "SetNull"
+        on_update = "Cascade",
+        on_delete = "Cascade"
     )]
     pub owner: HasOne<super::owner::Entity>,
+
+    #[sea_orm(has_many)]
+    pub aliases: HasMany<super::alias::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
