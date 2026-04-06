@@ -13,8 +13,11 @@ pub struct Model {
 
     pub creator_id: i64,
 
-    #[sea_orm(column_type = "Text")]
-    pub name: String,
+
+    // macros depend on aliases to provide names
+
+    // #[sea_orm(column_type = "Text")]
+    // pub name: String,
 
     #[sea_orm(column_type = "Text")]
     pub contents: String,

@@ -1,4 +1,12 @@
-CREATE VIRTUAL TABLE name_fts USING fts5(name, macro_id UNINDEXED, alias_id UNINDEXED);
+CREATE VIRTUAL TABLE name_fts USING fts5(
+    owner_id UNINDEXED,
+    group_id UNINDEXED,
+    macro_id UNINDEXED,
+    alias_id UNINDEXED,
+    owner_name,
+    group_name,
+    macro_or_alias_name,
+);
 
 -- Triggers to keep the FTS index up to date.
 CREATE TRIGGER fts_alias_insert AFTER INSERT ON alias BEGIN
