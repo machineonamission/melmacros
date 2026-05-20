@@ -3,6 +3,7 @@ mod db;
 mod commands;
 mod config;
 mod common;
+pub mod db_interface;
 
 use anyhow::{Error, Result};
 
@@ -89,7 +90,7 @@ async fn main() -> Result<()> {
 
                 common::sync_commands(ctx, framework.options().commands.as_slice(), false).await?;
                 Ok(Data {
-                    db: db::init_db().await?,
+                    db: db::init_db(config.database_url).await?,
                 })
             })
         })

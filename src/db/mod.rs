@@ -5,11 +5,11 @@ use anyhow::Result;
 // static DATABASE: OnceCell<DatabaseConnection> = OnceCell::const_new();
 
 use sea_orm::{Database, DatabaseConnection};
-use migration::{Migrator, MigratorTrait};
+// use migration::{Migrator, MigratorTrait};
 
-pub async fn init_db() -> Result<DatabaseConnection> {
+pub async fn init_db(database_url: String) -> Result<DatabaseConnection> {
     let db = Database::connect(
-        r"sqlite://melmacros.db?mode=rwc",
+        database_url,
     )
         .await?;
 
@@ -19,7 +19,7 @@ pub async fn init_db() -> Result<DatabaseConnection> {
         .await?;
 
     // runs migrations (db stuff i cant do in seaorm)
-    Migrator::up(&db, None).await?;
+    // Migrator::up(&db, None).await?;
 
     // DATABASE.set(db)?;
     Ok(db)

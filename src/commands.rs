@@ -1,10 +1,10 @@
 use crate::common::Context;
 // use crate::db::entity::macro_model;
-use anyhow::{anyhow, bail, Result};
+use crate::db::entity::prelude::{MacroGroup, Owner};
+use crate::db_interface::get_available_macros;
+use anyhow::{Result, anyhow, bail};
 use sea_orm::ActiveModelTrait;
-use serenity::all::{
-    AuthorizingIntegrationOwner, InteractionContext,
-};
+use serenity::all::{AuthorizingIntegrationOwner, InteractionContext};
 
 /// Show this help menu
 #[poise::command(slash_command)]
@@ -33,19 +33,13 @@ pub async fn r#macro(
     // #[autocomplete = "poise::builtins::autocomplete_command"]
     name: String,
 ) -> Result<()> {
-    // let m = macro_model::Entity::find()
-    //     .filter(macro_model::Column::Name.eq(name))
-    //     .filter(macro_model::Column::Owner.eq(ctx.author().id.get() as i64))
-    //     .one(&ctx.data().db)
-    //     .await?;
-    // if let Some(m) = m {
-    //     ctx.send(poise::CreateReply::default()
-    //         .content(m.contents)
-    //         .ephemeral(false)
-    //     ).await?;
-    // } else {
-    //     bail!("Macro not found.");
-    // }
+    let macros = get_available_macros(
+        &ctx.data().db,
+        ctx.author().id.get(),
+        ctx.guild_id().map(|g| g.get()),
+    )
+    .await?;
+    dbg!(&macros);
     Ok(())
 }
 
@@ -55,15 +49,50 @@ enum ContextType {
     Guild,
 }
 
-
-
-#[poise::command(slash_command, subcommands("add", "delete", "edit"))]
+#[poise::command(slash_command, subcommands("add_macro", "delete", "edit", "group"))]
 pub async fn macros(ctx: Context<'_>) -> Result<()> {
     bail!("Dummy parent command shouldn't ever be called directly.")
 }
 
-#[poise::command(slash_command)]
-pub async fn add(
+#[poise::command(slash_command, subcommands("add_group"))]
+pub async fn group(ctx: Context<'_>) -> Result<()> {
+    bail!("Dummy parent command shouldn't ever be called directly.")
+}
+
+pub fn can_add_to_guild(ctx: &Context<'_>) -> Result<()> {
+    if !matches!(
+        ctx.interaction.context.ok_or(anyhow!("missing context"))?,
+        InteractionContext::Guild
+    ) {
+        bail!("Command not ran in guild.");
+    }
+
+    // check if the bot is installed in the guild
+    let aio = &ctx.interaction.authorizing_integration_owners.0;
+    if !aio
+        .iter()
+        .any(|x| matches!(x, AuthorizingIntegrationOwner::GuildInstall(_)))
+    {
+        bail!("The bot is not installed in this guild.");
+    }
+
+    // check that the user has manage guild permissions
+    if !ctx
+        .interaction
+        .member
+        .clone()
+        .ok_or(anyhow!("missing member"))?
+        .permissions
+        .ok_or(anyhow!("missing permissions"))?
+        .manage_guild()
+    {
+        bail!("You need the Manage Server permission to create guild macros.");
+    }
+    Ok(())
+}
+
+#[poise::command(slash_command, rename="add")]
+pub async fn add_macro(
     ctx: Context<'_>,
     context_type: ContextType,
     name: String,
@@ -73,26 +102,7 @@ pub async fn add(
         ContextType::User => ctx.author().id.get(),
         ContextType::Guild => {
             // check if in guild
-            if !matches!(
-                ctx.interaction.context.ok_or(anyhow!("missing context"))?,
-                InteractionContext::Guild
-            ) {
-                bail!("Command not ran in guild.");
-            }
-
-            // check if the bot is installed in the guild
-            let aio = &ctx.interaction.authorizing_integration_owners.0;
-            if !aio
-                .iter()
-                .any(|x| matches!(x, AuthorizingIntegrationOwner::GuildInstall(_)))
-            {
-                bail!("The bot is not installed in this guild.");
-            }
-
-            // check that the user has manage guild permissions
-            if !ctx.interaction.member.clone().ok_or(anyhow!("missing member"))?.permissions.ok_or(anyhow!("missing permissions"))?.manage_guild() {
-                bail!("You need the Manage Server permission to create guild macros.");
-            }
+            can_add_to_guild(&ctx)?;
 
             ctx.guild_id().ok_or(anyhow!("missing guild id"))?.get()
         }
@@ -106,6 +116,55 @@ pub async fn add(
     // }.insert(&ctx.data().db).await?;
 
     ctx.say("Added macro!").await?;
+
+    Ok(())
+}
+
+#[poise::command(slash_command, rename="add")]
+pub async fn add_group(
+    ctx: Context<'_>,
+    context_type: ContextType,
+    name: String,
+) -> Result<()> {
+    let owner_id = match context_type {
+        ContextType::User => ctx.author().id.get(),
+        ContextType::Guild => {
+            can_add_to_guild(&ctx)?;
+
+            ctx.guild_id().ok_or(anyhow!("missing guild id"))?.get()
+        }
+    };
+
+    // let am = db::entity::macro_model::ActiveModel {
+    //     owner: Set(owner_id as i64),
+    //     name: Set(name),
+    //     contents: Set(contents),
+    //     ..Default::default()
+    // }.insert(&ctx.data().db).await?;
+
+    dbg!(ctx.author().display_name());
+    dbg!(&owner_id);
+
+    let owner = match context_type {
+        ContextType::User => Owner::ActiveModel::builder()
+            .set_name(ctx.author().name.clone()) // TODO does not update name on every insert?
+            .set_is_server(false),
+        ContextType::Guild => Owner::ActiveModel::builder()
+            .set_name(ctx.guild().unwrap().name.clone())
+            .set_is_server(true),
+    }.set_id(owner_id as i64).insert(&ctx.data().db).await?;
+
+    dbg!(&owner);
+
+    MacroGroup::ActiveModel::builder()
+        .set_owner(owner)
+        // .set_owner_id(owner_id as i64)
+        .set_name(name)
+        .set_is_subscribable(true)
+        .save(&ctx.data().db)
+        .await?;
+
+    ctx.say("Added macro group!").await?;
 
     Ok(())
 }

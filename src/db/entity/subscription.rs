@@ -19,7 +19,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    pub macro_groups: HasOne<super::macro_group::Entity>,
+    pub macro_group: HasOne<super::macro_group::Entity>,
     
     #[sea_orm(
         belongs_to,
@@ -28,7 +28,7 @@ pub struct Model {
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    pub owners: HasOne<super::owner::Entity>,
+    pub owner: HasOne<super::owner::Entity>,
     
 }
 

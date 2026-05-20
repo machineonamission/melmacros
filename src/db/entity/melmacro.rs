@@ -12,12 +12,9 @@ pub struct Model {
     pub group_id: i64,
 
     pub creator_id: i64,
-
-
-    // macros depend on aliases to provide names
-
-    // #[sea_orm(column_type = "Text")]
-    // pub name: String,
+    
+    #[sea_orm(column_type = "Text")]
+    pub name: String,
 
     #[sea_orm(column_type = "Text")]
     pub contents: String,

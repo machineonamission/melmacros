@@ -2,7 +2,8 @@ use serde::Deserialize;
 use anyhow::Result;
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub(crate) token: String,
+    pub token: String,
+    pub database_url: String, 
 }
 
 pub async fn load_config() -> Result<Config> {
