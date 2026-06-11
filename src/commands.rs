@@ -1,10 +1,11 @@
 use crate::common::Context;
 // use crate::db::entity::macro_model;
 use crate::db::entity::prelude::{MacroGroup, Owner};
-use crate::db_interface::get_available_macros;
 use anyhow::{Result, anyhow, bail};
-use sea_orm::ActiveModelTrait;
+use sea_orm::ActiveValue::Set;
+use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, sea_query};
 use serenity::all::{AuthorizingIntegrationOwner, InteractionContext};
+use crate::db_interface::get_owned_groups;
 
 /// Show this help menu
 #[poise::command(slash_command)]
@@ -33,7 +34,7 @@ pub async fn r#macro(
     // #[autocomplete = "poise::builtins::autocomplete_command"]
     name: String,
 ) -> Result<()> {
-    let macros = get_available_macros(
+    let macros = get_owned_groups(
         &ctx.data().db,
         ctx.author().id.get(),
         ctx.guild_id().map(|g| g.get()),
@@ -91,22 +92,24 @@ pub fn can_add_to_guild(ctx: &Context<'_>) -> Result<()> {
     Ok(())
 }
 
-#[poise::command(slash_command, rename="add")]
+#[poise::command(slash_command, rename = "add")]
 pub async fn add_macro(
     ctx: Context<'_>,
-    context_type: ContextType,
-    name: String,
-    contents: String,
+    #[description = "The name of the macro"] name: String,
+    #[description = "The contents of the macro (text or media *link*)"] contents: String,
+    #[description = "The macro group to add to"]
+    #[autocomplete = "owned_groups_autocomplete"]
+    group: Option<String>,
 ) -> Result<()> {
-    let owner_id = match context_type {
-        ContextType::User => ctx.author().id.get(),
-        ContextType::Guild => {
-            // check if in guild
-            can_add_to_guild(&ctx)?;
-
-            ctx.guild_id().ok_or(anyhow!("missing guild id"))?.get()
-        }
-    };
+    // let owner_id = match context_type {
+    //     ContextType::User => ctx.author().id.get(),
+    //     ContextType::Guild => {
+    //         // check if in guild
+    //         can_add_to_guild(&ctx)?;
+    //
+    //         ctx.guild_id().ok_or(anyhow!("missing guild id"))?.get()
+    //     }
+    // };
 
     // let am = db::entity::macro_model::ActiveModel {
     //     owner: Set(owner_id as i64),
@@ -120,12 +123,8 @@ pub async fn add_macro(
     Ok(())
 }
 
-#[poise::command(slash_command, rename="add")]
-pub async fn add_group(
-    ctx: Context<'_>,
-    context_type: ContextType,
-    name: String,
-) -> Result<()> {
+#[poise::command(slash_command, rename = "add")]
+pub async fn add_group(ctx: Context<'_>, context_type: ContextType, name: String) -> Result<()> {
     let owner_id = match context_type {
         ContextType::User => ctx.author().id.get(),
         ContextType::Guild => {
@@ -146,27 +145,69 @@ pub async fn add_group(
     dbg!(&owner_id);
 
     let owner = match context_type {
-        ContextType::User => Owner::ActiveModel::builder()
-            .set_name(ctx.author().name.clone()) // TODO does not update name on every insert?
-            .set_is_server(false),
-        ContextType::Guild => Owner::ActiveModel::builder()
-            .set_name(ctx.guild().unwrap().name.clone())
-            .set_is_server(true),
-    }.set_id(owner_id as i64).insert(&ctx.data().db).await?;
+        ContextType::User => Owner::ActiveModel {
+            name: Set(ctx.author().name.to_owned()), // TODO does not update name on every insert?
+            is_server: Set(false),
+            id: Set(owner_id as i64),
+            ..Default::default()
+        },
+        ContextType::Guild => Owner::ActiveModel {
+            name: Set(ctx.guild().unwrap().name.to_owned()), // TODO does not update name on every insert?
+            is_server: Set(true),
+            id: Set(owner_id as i64),
+            ..Default::default()
+        },
+    };
 
-    dbg!(&owner);
+    let nowner = Owner::Entity::insert(owner)
+        .on_conflict(
+            // on conflict do update
+            sea_query::OnConflict::column(Owner::Column::Id)
+                .update_column(Owner::Column::Id)
+                .to_owned(),
+        )
+        .exec_with_returning(&ctx.data().db)
+        .await?;
 
     MacroGroup::ActiveModel::builder()
-        .set_owner(owner)
-        // .set_owner_id(owner_id as i64)
-        .set_name(name)
+        .set_owner_id(nowner.id)
+        .set_owner(nowner.into_active_model())
+        .set_name(name.clone())
         .set_is_subscribable(true)
         .save(&ctx.data().db)
         .await?;
 
-    ctx.say("Added macro group!").await?;
+    ctx.say(format!(
+        "Added macro group `{name}` to {}!",
+        match context_type {
+            ContextType::User => "user",
+            ContextType::Guild => "guild",
+        }
+    ))
+    .await?;
 
     Ok(())
+}
+
+pub async fn owned_groups_autocomplete(ctx: Context<'_>, partial: &str) -> Vec<String> {
+    let mut out = vec!();
+    if let Ok(grps) = get_owned_groups(
+        &ctx.data().db,
+        ctx.author().id.get(),
+        if can_add_to_guild(&ctx).is_ok() {
+            ctx.guild_id().map(|g| g.get())
+        } else {
+            None
+        },
+    ).await {
+        for (owner, groups) in grps {
+            for group in groups {
+                out.push(format!("{}/{}", owner.name, group.name))
+            }
+        }
+    }
+
+    out
 }
 
 /*match ctx.guild().map(|g| g.clone()) {

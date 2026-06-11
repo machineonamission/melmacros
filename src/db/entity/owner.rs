@@ -9,9 +9,6 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
 
-    #[sea_orm(unique)]
-    pub discord_id: i64,
-
     #[sea_orm(column_type = "Text")]
     pub name: String,
 
@@ -19,6 +16,9 @@ pub struct Model {
 
     #[sea_orm(has_many)]
     pub created_macros: HasMany<super::melmacro::Entity>,
+
+    #[sea_orm(has_many)]
+    pub created_groups: HasMany<super::macro_group::Entity>,
 
     #[sea_orm(has_many, via = "subscription")]
     pub subscriptions: HasMany<super::macro_group::Entity>,
